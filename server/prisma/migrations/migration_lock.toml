@@ -1,0 +1,2 @@
+# Do not edit manually. This records the database provider used by Prisma.
+provider = "postgresql"

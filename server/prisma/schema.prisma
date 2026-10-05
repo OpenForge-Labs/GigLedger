@@ -1,0 +1,86 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Platform {
+  ZOMATO
+  SWIGGY
+  UBER
+  RAPIDO
+  OLA
+  OTHER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique @db.VarChar(320)
+  passwordHash String   @db.VarChar(255)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  orders   Order[]
+  settings Settings?
+  sessions Session[]
+
+  @@map("users")
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  // Only a SHA-256 digest of the browser's opaque token is stored at rest.
+  tokenHash String   @unique @db.Char(64)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+model Order {
+  id              String   @id @default(cuid())
+  userId          String
+  // A client-generated UUID makes retries/imports idempotent after reconnecting.
+  clientId        String   @db.Uuid
+  platform        Platform
+  earnings        Decimal  @db.Decimal(12, 2)
+  distanceKm      Decimal  @db.Decimal(10, 3)
+  durationMinutes Int
+  occurredAt      DateTime
+  note            String   @default("") @db.VarChar(120)
+  // Compared during sync; server updatedAt remains the authoritative audit time.
+  clientUpdatedAt DateTime @default(now())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  deletedAt       DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clientId])
+  @@index([userId, occurredAt])
+  @@index([userId, updatedAt])
+  @@map("orders")
+}
+
+model Settings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  mileageKmPerLitre     Decimal  @default(40) @db.Decimal(6, 2)
+  petrolPricePerLitre   Decimal  @default(105) @db.Decimal(8, 2)
+  currency              String   @default("INR") @db.Char(3)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("settings")
+}
