@@ -71,7 +71,10 @@ credentials.
 node scripts/checklist.mjs
 npm run lint
 npm run build
+npm test 
 ```
+
+`npm test` runs the Vitest unit tests for the earnings and fuel calculations in `src/lib/calculations.test.js`
 
 `npm run preview` serves the production build locally. `npm run server:start`
 starts the API, and `npm run db:deploy` applies committed Prisma migrations in
